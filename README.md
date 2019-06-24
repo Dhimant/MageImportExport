@@ -1,7 +1,7 @@
 # MageImportExport
 Magento2 Product Import Export Using CLI
 
-##Inspired by the following article 
+## Inspired by the following article 
 ```bash
 https://www.thirdandgrove.com/importing-products-magento2-part2
 ```
