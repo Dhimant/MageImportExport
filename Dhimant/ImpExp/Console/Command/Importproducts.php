@@ -28,12 +28,30 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Magento\ImportExport\Model\ImportFactory;
+use Magento\ImportExport\Model\Import\Source\CsvFactory;
+use Magento\Framework\Filesystem\Directory\ReadFactory;
+use Magento\Framework\App\State;
+
 
 class Importproducts extends Command
 {
 
     const NAME_ARGUMENT = "name";
     const NAME_OPTION = "option";
+
+    public function __construct(
+      State $state,
+      ImportFactory $importFactory,
+      CsvFactory $csvSourceFactory,
+      ReadFactory $readFactory
+    ) {
+        $this->state = $state;
+        $this->importFactory = $importFactory;
+        $this->csvSourceFactory = $csvSourceFactory;
+        $this->readFactory = $readFactory;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -42,9 +60,50 @@ class Importproducts extends Command
         InputInterface $input,
         OutputInterface $output
     ) {
+        /*  
         $name = $input->getArgument(self::NAME_ARGUMENT);
         $option = $input->getOption(self::NAME_OPTION);
         $output->writeln("Hello " . $name);
+        */
+
+        try {
+            $this->state->setAreaCode('adminhtml');
+        } catch (\Magento\Framework\Exception\LocalizedException $e) {
+            // Intentionally left empty.
+        }
+ 
+        $import_path = $input->getArgument('import_path');
+        $import_file = pathinfo($import_path);
+ 
+        $import = $this->importFactory->create();
+        $import->setData(
+            array(
+                'entity' => 'catalog_product',
+                'behavior' => 'append',
+                'validation_strategy' => 'validation-stop-on-errors',
+            )
+        );
+ 
+        $read_file = $this->readFactory->create($import_file['dirname']);
+        $csvSource = $this->csvSourceFactory->create(
+            array(
+                'file' => $import_file['basename'],
+                'directory' => $read_file,
+            )
+        );
+ 
+        $validate = $import->validateSource($csvSource);
+        if (!$validate) {
+          $output->writeln('<error>Unable to validate the CSV.</error>');
+        }
+ 
+        $result = $import->importSource();
+        if ($result) {
+          $import->invalidateIndex();
+        }
+ 
+        $output->writeln("<info>Finished importing products from $import_path</info>");
+
     }
 
     /**
@@ -54,10 +113,14 @@ class Importproducts extends Command
     {
         $this->setName("dhimant_impexp:importproducts");
         $this->setDescription("Import Products using default CSV");
+        /*
         $this->setDefinition([
             new InputArgument(self::NAME_ARGUMENT, InputArgument::OPTIONAL, "Name"),
             new InputOption(self::NAME_OPTION, "-a", InputOption::VALUE_NONE, "Option functionality")
         ]);
+        */
+        $this->addArgument('import_path', InputArgument::REQUIRED, 'The path of the import file (ie. ../../path/to/file.csv)');
+
         parent::configure();
     }
 }
