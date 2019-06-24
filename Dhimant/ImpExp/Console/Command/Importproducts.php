@@ -60,11 +60,6 @@ class Importproducts extends Command
         InputInterface $input,
         OutputInterface $output
     ) {
-        /*  
-        $name = $input->getArgument(self::NAME_ARGUMENT);
-        $option = $input->getOption(self::NAME_OPTION);
-        $output->writeln("Hello " . $name);
-        */
 
         try {
             $this->state->setAreaCode('adminhtml');
@@ -113,13 +108,7 @@ class Importproducts extends Command
     {
         $this->setName("dhimant_impexp:importproducts");
         $this->setDescription("Import Products using default CSV");
-        /*
-        $this->setDefinition([
-            new InputArgument(self::NAME_ARGUMENT, InputArgument::OPTIONAL, "Name"),
-            new InputOption(self::NAME_OPTION, "-a", InputOption::VALUE_NONE, "Option functionality")
-        ]);
-        */
-        $this->addArgument('import_path', InputArgument::REQUIRED, 'The path of the import file (ie. ../../path/to/file.csv)');
+        $this->addArgument('import_path', InputArgument::REQUIRED, 'The path of the import file (ie. ../../path/to/import.csv)');
 
         parent::configure();
     }

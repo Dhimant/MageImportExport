@@ -28,12 +28,34 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Magento\ImportExport\Model\ExportFactory;
+use Magento\ImportExport\Model\Import\Source\CsvFactory;
+use Magento\Framework\Filesystem\Directory\WriteFactory;
+use Magento\Framework\Filesystem;
+use Magento\Framework\App\State;
 
 class Exportproducts extends Command
 {
 
     const NAME_ARGUMENT = "name";
     const NAME_OPTION = "option";
+    private $exportInfoFactory;
+
+
+    public function __construct(
+      State $state,
+      ExportFactory $exportFactory,
+      CsvFactory $csvSourceFactory,
+      WriteFactory $writeFactory,
+      Filesystem $filesystem
+    ) {
+        $this->state = $state;
+        $this->exportFactory = $exportFactory;
+        $this->csvSourceFactory = $csvSourceFactory;
+        $this->writeFactory = $writeFactory;
+        $this->filesystem = $filesystem;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -42,9 +64,31 @@ class Exportproducts extends Command
         InputInterface $input,
         OutputInterface $output
     ) {
-        $name = $input->getArgument(self::NAME_ARGUMENT);
-        $option = $input->getOption(self::NAME_OPTION);
-        $output->writeln("Hello " . $name);
+    
+        try {
+            $this->state->setAreaCode('adminhtml');
+        } catch (\Magento\Framework\Exception\LocalizedException $e) {
+            // Intentionally left empty.
+        }
+ 
+        $export_path = $input->getArgument('export_path');
+        $export_file = pathinfo($export_path);
+
+        $output->writeln("export_path".$export_path);
+        $output->writeln("export_file".print_r($export_file,1));
+
+        $export = $this->exportFactory->create();
+        $export->setEntity('catalog_product');
+        $export->setFileFormat('csv');
+        $export->setExportFilter('');
+
+        $csv_data = $export->export();
+        $export_to_file = $export_file['dirname'].'/'.$export_file['basename'];
+        $handle = fopen($export_to_file, 'w') or die('Cannot open file:  '.$export_to_file);
+        //$data = 'This is the data';
+        fwrite($handle, $csv_data);
+        $output->writeln("<info>Finished exporting products from $export_path</info>");
+
     }
 
     /**
@@ -53,11 +97,8 @@ class Exportproducts extends Command
     protected function configure()
     {
         $this->setName("dhimant_impexp:exportproducts");
-        $this->setDescription("Export Products to CSV");
-        $this->setDefinition([
-            new InputArgument(self::NAME_ARGUMENT, InputArgument::OPTIONAL, "Name"),
-            new InputOption(self::NAME_OPTION, "-a", InputOption::VALUE_NONE, "Option functionality")
-        ]);
+        $this->setDescription("Export All Products to CSV");
+        $this->addArgument('export_path', InputArgument::REQUIRED, 'The path to export file (ie. ../../path/to/export.csv)');
         parent::configure();
     }
 }

@@ -19,14 +19,23 @@ php bin/magento setup:di:compile
 
 ## Usage
 
+Import Products
+
 ```bash
-php bin/magento dhimant_impexp:importproducts /public_html/var/import/catalog_product.csv
+php bin/magento dhimant_impexp:importproducts /public_html/var/import/import_products.csv
 ```
+
+Export Products 
+```bash
+php bin/magento dhimant_impexp:exportproducts /public_html/var/export/export_products.csv
+```
+
 
 ## Help
 
 ```bash
 php bin/magento dhimant_impexp:importproducts -h
+php bin/magento dhimant_impexp:exportproducts -h
 ```
 
 ## Contributing
